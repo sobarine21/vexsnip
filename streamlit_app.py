@@ -3,6 +3,7 @@ import cv2
 import os
 import zipfile
 from tempfile import TemporaryDirectory
+import psutil
 
 # Function to extract frames every 1 second
 def extract_frames(video_path, output_path, interval=1):
@@ -33,10 +34,34 @@ def extract_frames(video_path, output_path, interval=1):
 
     cap.release()
 
+# Function to display server usage metrics
+def display_server_metrics():
+    st.sidebar.header("Server Resource Usage")
+    
+    # CPU usage
+    cpu_percent = psutil.cpu_percent(interval=1)
+    st.sidebar.metric("CPU Usage", f"{cpu_percent}%")
+    
+    # Memory (RAM) usage
+    mem = psutil.virtual_memory()
+    st.sidebar.metric("RAM Usage", f"{mem.percent}%")
+    
+    # Disk (ROM) usage
+    disk = psutil.disk_usage('/')
+    st.sidebar.metric("Disk Usage", f"{disk.percent}%")
+    
+    # Network bandwidth usage
+    net_io = psutil.net_io_counters()
+    st.sidebar.metric("Bytes Sent", f"{net_io.bytes_sent / 1_000_000:.2f} MB")
+    st.sidebar.metric("Bytes Received", f"{net_io.bytes_recv / 1_000_000:.2f} MB")
+
 # Streamlit app
 def main():
     st.title("Video Frame Extractor")
     st.write("Upload your videos, and frames will be extracted every second.")
+
+    # Display server metrics in the sidebar
+    display_server_metrics()
 
     # Upload video files
     uploaded_files = st.file_uploader(
