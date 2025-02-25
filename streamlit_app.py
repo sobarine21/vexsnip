@@ -64,21 +64,19 @@ def main():
     # Hide the top-right GitHub, Share, and Star buttons using custom CSS
     hide_streamlit_elements = """
     <style>
-        .css-1d391kg {
-            visibility: hidden;
-        }
-        .css-1w3aw3n {
-            visibility: hidden;
-        }
+        .css-1d391kg { visibility: hidden; }
+        .css-1w3aw3n { visibility: hidden; }
     </style>
     """
     st.markdown(hide_streamlit_elements, unsafe_allow_html=True)
 
-    # Display message for self-hosting and source code
-    st.markdown("""
-    ## For self hosting and downloading the source code, please visit [this link](https://dhruvbansal8.gumroad.com/l/olsspn)
+    # Add the message about self-hosting subtly
+    st.sidebar.markdown("""
+    ## For self-hosting and downloading the source code:
+    You can visit [this link](https://dhruvbansal8.gumroad.com/l/olsspn) to get the source code and learn how to host it on your own machine.
     """)
 
+    # Main title and description
     st.title("Video Frame Extractor")
     st.write("Upload your videos, select FPS, and frames will be extracted.")
 
