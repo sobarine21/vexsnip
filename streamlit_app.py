@@ -12,7 +12,11 @@ import shutil
 def extract_frames(video_path, output_path, target_fps, interval_seconds=1, resize=None, quality=None):
     cap = cv2.VideoCapture(video_path)
     original_fps = cap.get(cv2.CAP_PROP_FPS)  # Original frames per second
-    video_duration = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000  # Duration in seconds
+    
+    # Correct way to calculate video duration using total frames and fps
+    total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)  # Total number of frames in the video
+    video_duration = total_frames / original_fps  # Video duration in seconds
+    
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
@@ -29,7 +33,7 @@ def extract_frames(video_path, output_path, target_fps, interval_seconds=1, resi
 
     # Display video details
     st.write(f"Processing video: {video_name}")
-    st.write(f"Video Duration: {video_duration} seconds | Resolution: {width}x{height}")
+    st.write(f"Video Duration: {video_duration:.2f} seconds | Resolution: {width}x{height}")
 
     # Create progress bar
     progress = st.progress(0)
@@ -57,7 +61,7 @@ def extract_frames(video_path, output_path, target_fps, interval_seconds=1, resi
             saved_frames += 1
 
         # Update progress bar
-        progress.progress(int((frame_count / video_duration) * 100))
+        progress.progress(int((frame_count / total_frames) * 100))
 
         frame_count += 1
 
