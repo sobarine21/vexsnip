@@ -4,35 +4,39 @@ import os
 import zipfile
 from tempfile import TemporaryDirectory
 import psutil
+import concurrent.futures
+import numpy as np
 
-# Function to extract frames every 1 second
-def extract_frames(video_path, output_path, interval=1):
+# Function to extract frames at the selected FPS
+def extract_frames(video_path, output_path, target_fps):
     cap = cv2.VideoCapture(video_path)
-    fps = cap.get(cv2.CAP_PROP_FPS)  # Frames per second
+    original_fps = cap.get(cv2.CAP_PROP_FPS)  # Original frames per second
 
-    if not fps or fps == 0:
+    if not original_fps or original_fps == 0:
         st.warning(f"Skipping {os.path.basename(video_path)}, unable to determine FPS.")
         return
 
     video_name = os.path.basename(video_path).split('.')[0]
-    frame_interval = int(fps * interval)  # Interval in frames (1 second = fps frames)
-
+    
+    # Calculate frame interval for target FPS
+    frame_interval = int(original_fps / target_fps)  # Interval in frames
     success, frame = cap.read()
     frame_count = 0
+    saved_frames = 0
 
     while success:
-        # Save frame at every second (1 second interval)
+        # Save frame if it's the correct interval for target FPS
         if frame_count % frame_interval == 0:
-            image_filename = f"{video_name}_frame_{int(frame_count // fps)}.jpg"
+            image_filename = f"{video_name}_frame_{int(frame_count // original_fps)}.jpg"
             image_path = os.path.join(output_path, image_filename)
             cv2.imwrite(image_path, frame)
+            saved_frames += 1
 
-        # Increment frame count by 1 to proceed to the next frame
-        frame_count += frame_interval
-        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_count)  # Set the next frame position
+        frame_count += 1
         success, frame = cap.read()
 
     cap.release()
+    return saved_frames
 
 # Function to display server usage metrics
 def display_server_metrics():
@@ -58,7 +62,7 @@ def display_server_metrics():
 # Streamlit app
 def main():
     st.title("Video Frame Extractor")
-    st.write("Upload your videos, and frames will be extracted every second.")
+    st.write("Upload your videos, select FPS, and frames will be extracted.")
 
     # Display server metrics in the sidebar
     display_server_metrics()
@@ -70,20 +74,40 @@ def main():
         accept_multiple_files=True
     )
 
+    # FPS selection
+    target_fps = st.slider("Select FPS for extraction", min_value=1, max_value=30, value=1)
+
     if uploaded_files:
         with TemporaryDirectory() as temp_dir:
             output_folder = os.path.join(temp_dir, "screenshots")
             os.makedirs(output_folder, exist_ok=True)
 
-            for uploaded_file in uploaded_files:
-                video_path = os.path.join(temp_dir, uploaded_file.name)
-                
-                # Save the uploaded file to a temporary directory
-                with open(video_path, "wb") as f:
-                    f.write(uploaded_file.read())
+            # Prepare parallel processing using ThreadPoolExecutor for multiple videos
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures = []
+                for uploaded_file in uploaded_files:
+                    video_path = os.path.join(temp_dir, uploaded_file.name)
 
-                st.write(f"Processing video: {uploaded_file.name}")
-                extract_frames(video_path, output_folder)
+                    # Save the uploaded file to a temporary directory
+                    with open(video_path, "wb") as f:
+                        f.write(uploaded_file.read())
+
+                    futures.append(
+                        executor.submit(extract_frames, video_path, output_folder, target_fps)
+                    )
+
+                # Wait for all videos to be processed
+                total_saved_frames = 0
+                for future in concurrent.futures.as_completed(futures):
+                    saved_frames = future.result()
+                    total_saved_frames += saved_frames
+                    st.write(f"Extracted {saved_frames} frames.")
+
+            # Provide feedback to user
+            if total_saved_frames > 0:
+                st.success(f"Successfully extracted {total_saved_frames} frames.")
+            else:
+                st.warning("No frames were extracted. Please check the video files.")
 
             # Create a ZIP file for the output folder
             zip_path = os.path.join(temp_dir, "frames.zip")
