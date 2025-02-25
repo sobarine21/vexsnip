@@ -16,7 +16,7 @@ def extract_frames(video_path, output_path, target_fps):
         return 0
 
     video_name = os.path.basename(video_path).split('.')[0]
-    frame_interval = int(original_fps / target_fps)
+    frame_interval = max(1, int(original_fps / target_fps))  # Ensure non-zero interval
     success, frame = cap.read()
     frame_count, saved_frames = 0, 0
 
@@ -68,28 +68,36 @@ def main():
             output_folder = os.path.join(temp_dir, "screenshots")
             os.makedirs(output_folder, exist_ok=True)
 
+            saved_file_paths = []
+            for uploaded_file in uploaded_files:
+                temp_file_path = os.path.join(temp_dir, uploaded_file.name)
+                with open(temp_file_path, "wb") as f:
+                    f.write(uploaded_file.read())
+                saved_file_paths.append(temp_file_path)
+
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 futures = [
                     executor.submit(
                         extract_frames,
-                        os.path.join(temp_dir, uploaded_file.name),
+                        file_path,
                         output_folder,
                         target_fps
                     )
-                    for uploaded_file in uploaded_files
+                    for file_path in saved_file_paths
                 ]
 
             total_saved_frames = sum(f.result() for f in concurrent.futures.as_completed(futures))
             st.success(f"Extracted {total_saved_frames} frames.") if total_saved_frames else st.warning("No frames extracted.")
 
-            zip_path = os.path.join(temp_dir, "frames.zip")
-            with zipfile.ZipFile(zip_path, "w") as zipf:
-                for root, _, files in os.walk(output_folder):
-                    for file in files:
-                        zipf.write(os.path.join(root, file), arcname=file)
+            if total_saved_frames > 0:
+                zip_path = os.path.join(temp_dir, "frames.zip")
+                with zipfile.ZipFile(zip_path, "w") as zipf:
+                    for root, _, files in os.walk(output_folder):
+                        for file in files:
+                            zipf.write(os.path.join(root, file), arcname=file)
 
-            with open(zip_path, "rb") as zipf:
-                st.download_button("Download Extracted Frames", zipf, "extracted_frames.zip", "application/zip")
+                with open(zip_path, "rb") as zipf:
+                    st.download_button("Download Extracted Frames", zipf, "extracted_frames.zip", "application/zip")
 
     # Self-hosting and Source Code link
     st.markdown(
