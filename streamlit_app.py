@@ -61,6 +61,24 @@ def display_server_metrics():
 
 # Streamlit app
 def main():
+    # Hide the top-right GitHub, Share, and Star buttons using custom CSS
+    hide_streamlit_elements = """
+    <style>
+        .css-1d391kg {
+            visibility: hidden;
+        }
+        .css-1w3aw3n {
+            visibility: hidden;
+        }
+    </style>
+    """
+    st.markdown(hide_streamlit_elements, unsafe_allow_html=True)
+
+    # Display message for self-hosting and source code
+    st.markdown("""
+    ## For self hosting and downloading the source code, please visit [this link](https://dhruvbansal8.gumroad.com/l/olsspn)
+    """)
+
     st.title("Video Frame Extractor")
     st.write("Upload your videos, select FPS, and frames will be extracted.")
 
