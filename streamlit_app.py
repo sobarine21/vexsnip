@@ -64,13 +64,15 @@ def main():
     # Hide the top-right GitHub, Share, and Star buttons using custom CSS
     hide_streamlit_elements = """
     <style>
-        .css-1d391kg { visibility: hidden; }
-        .css-1w3aw3n { visibility: hidden; }
+        /* Hide Streamlit top-right elements */
+        .css-1d391kg { visibility: hidden; } /* GitHub button */
+        .css-1w3aw3n { visibility: hidden; } /* Share button */
+        .css-1d391kg, .css-1w3aw3n, .css-1b7rxx6, .css-1f0yhe0, .css-1qbzzdx { visibility: hidden; } /* Other top-right elements */
     </style>
     """
     st.markdown(hide_streamlit_elements, unsafe_allow_html=True)
 
-    # Add the message about self-hosting subtly
+    # Add the message about self-hosting subtly in the sidebar
     st.sidebar.markdown("""
     ## For self-hosting and downloading the source code:
     You can visit [this link](https://dhruvbansal8.gumroad.com/l/olsspn) to get the source code and learn how to host it on your own machine.
